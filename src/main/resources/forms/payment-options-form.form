@@ -1,0 +1,100 @@
+{
+  "components": [
+    {
+      "label": "Payment Amount",
+      "type": "number",
+      "id": "Field_paymentAmount",
+      "key": "paymentAmount",
+      "description": "Enter the amount you want to pay",
+      "validate": {
+        "required": true,
+        "min": 1,
+        "max": 50000
+      },
+      "properties": {
+        "step": "0.01"
+      },
+      "layout": {
+        "row": "Row_1vrlmze"
+      }
+    },
+    {
+      "label": "Payment Method",
+      "values": [
+        {
+          "label": "ACH Transfer",
+          "value": "ACH"
+        },
+        {
+          "label": "Wire Transfer",
+          "value": "WIRE"
+        },
+        {
+          "label": "Bank Transfer",
+          "value": "BANK_TRANSFER"
+        }
+      ],
+      "type": "select",
+      "id": "Field_paymentMethod",
+      "key": "paymentMethod",
+      "description": "Select your preferred payment method",
+      "validate": {
+        "required": true
+      },
+      "defaultValue": "ACH",
+      "layout": {
+        "row": "Row_1280wv5"
+      }
+    },
+    {
+      "subtype": "date",
+      "label": "Payment Date",
+      "type": "datetime",
+      "id": "Field_paymentDate",
+      "key": "paymentDate",
+      "description": "Select when you want the payment to be processed",
+      "validate": {
+        "required": true
+      },
+      "properties": {
+        "dateLabel": "Date",
+        "timeLabel": "Time",
+        "timeSerializingFormat": "utc_normalized",
+        "timeInterval": 15
+      },
+      "layout": {
+        "row": "Row_0988mam"
+      }
+    },
+    {
+      "type": "separator",
+      "layout": {
+        "row": "Row_17yo9st",
+        "columns": null
+      },
+      "id": "Field_0pkujic"
+    },
+    {
+      "label": "Confirm Payment Details",
+      "type": "checkbox",
+      "id": "Field_confirmPayment",
+      "key": "confirmPayment",
+      "description": "I confirm that the payment details are correct and authorize this transaction",
+      "validate": {
+        "required": true
+      },
+      "layout": {
+        "row": "Row_0ssj5i0"
+      }
+    }
+  ],
+  "type": "default",
+  "id": "payment-options-form",
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.2.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.36.1"
+  },
+  "schemaVersion": 18
+}

@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pay My Balance - Demo </title>
+    <style>
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 20px; }
+        .container { max-width: 1000px; margin: 0 auto; background: white; border-radius: 15px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); overflow: hidden; }
+        .header { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; padding: 30px; text-align: center; }
+        .header h1 { font-size: 2.5rem; margin-bottom: 10px; font-weight: 300; }
+        .nav-tabs { display: flex; background: #f8f9fa; border-bottom: 2px solid #e9ecef; }
+        .nav-tab { flex: 1; padding: 15px 20px; text-align: center; background: none; border: none; cursor: pointer; font-size: 1rem; font-weight: 500; transition: all 0.3s ease; }
+        .nav-tab.active { background: white; border-bottom: 3px solid #4facfe; color: #4facfe; }
+        .nav-tab:hover:not(.active) { background: #e9ecef; }
+        .tab-content { display: none; padding: 40px; }
+        .tab-content.active { display: block; }
+        .scenario-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .scenario-card { background: #f8f9fa; border: 2px solid #e9ecef; border-radius: 10px; padding: 20px; cursor: pointer; transition: all 0.3s ease; }
+        .scenario-card:hover { border-color: #4facfe; background: #f0f8ff; }
+        .scenario-card.rejection { border-left: 5px solid #dc3545; }
+        .scenario-card.approval { border-left: 5px solid #28a745; }
+        .scenario-card.mixed { border-left: 5px solid #ffc107; }
+        .scenario-card h3 { margin-bottom: 10px; color: #333; }
+        .scenario-card p { color: #666; font-size: 0.9rem; margin-bottom: 8px; }
+        .risk-controls { background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; padding: 20px; margin-bottom: 30px; }
+        .risk-controls h3 { color: #856404; margin-bottom: 15px; }
+        .risk-slider { margin-bottom: 15px; }
+        .risk-slider label { display: block; margin-bottom: 5px; font-weight: 600; color: #856404; }
+        .risk-slider input[type="range"] { width: 100%; }
+        .risk-slider .value { font-family: monospace; font-weight: bold; }
+        .btn { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; padding: 12px 20px; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease; }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(79, 172, 254, 0.3); }
+        .btn.danger { background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%); }
+        .btn.warning { background: linear-gradient(135deg, #feca57 0%, #ff9ff3 100%); }
+        .btn.success { background: linear-gradient(135deg, #48dbfb 0%, #0abde3 100%); }
+        .result { margin-top: 20px; padding: 15px; border-radius: 8px; }
+        .result.success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+        .result.error { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+        .result.warning { background: #fff3cd; border: 1px solid #ffeaa7; color: #856404; }
+        .loading { text-align: center; padding: 20px; display: none; }
+        .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #4facfe; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 15px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>💳 Pay My Balance - Demo</h1>
+        <p>Test Approval AND Rejection Scenarios</p>
+    </div>
+
+    <div class="nav-tabs">
+        <button class="nav-tab active" onclick="showTab('scenarios')">🎭 Test Scenarios</button>
+        <button class="nav-tab" onclick="showTab('custom')">⚙️ Custom Test</button>
+        <button class="nav-tab" onclick="showTab('controls')">🎛️ Risk Controls</button>
+    </div>
+
+    <!-- Test Scenarios Tab -->
+    <div id="scenarios-tab" class="tab-content active">
+        <h2>Pre-built Test Scenarios</h2>
+        <p>Click any scenario to test different fraud check outcomes:</p>
+
+        <div class="scenario-grid">
+            <div class="scenario-card approval" onclick="testScenario('low-risk')">
+                <h3>✅ Low Risk (Approval Expected)</h3>
+                <p><strong>Customer:</strong> CUST001 (Active)</p>
+                <p><strong>Amount:</strong> $100</p>
+                <p><strong>Method:</strong> ACH</p>
+                <p><strong>Expected:</strong> Easy approval</p>
+            </div>
+
+            <div class="scenario-card rejection" onclick="testScenario('high-risk')">
+                <h3>❌ High Risk (Rejection Expected)</h3>
+                <p><strong>Customer:</strong> CUST003 (Suspended)</p>
+                <p><strong>Amount:</strong> $15,000</p>
+                <p><strong>Method:</strong> Wire Transfer</p>
+                <p><strong>Expected:</strong> High risk rejection</p>
+            </div>
+
+            <div class="scenario-card mixed" onclick="testScenario('medium-risk')">
+                <h3>⚠️ Medium Risk (50/50 Chance)</h3>
+                <p><strong>Customer:</strong> CUST002 (Active)</p>
+                <p><strong>Amount:</strong> $3,000</p>
+                <p><strong>Method:</strong> Bank Transfer</p>
+                <p><strong>Expected:</strong> Random approval/rejection</p>
+            </div>
+
+            <div class="scenario-card rejection" onclick="testScenario('suspended-customer')">
+                <h3>🚫 Suspended Customer</h3>
+                <p><strong>Customer:</strong> CUST003 (Suspended)</p>
+                <p><strong>Amount:</strong> $500</p>
+                <p><strong>Method:</strong> ACH</p>
+                <p><strong>Expected:</strong> Higher risk due to status</p>
+            </div>
+
+            <div class="scenario-card rejection" onclick="testScenario('large-amount')">
+                <h3>💰 Large Amount Test</h3>
+                <p><strong>Customer:</strong> CUST001 (Active)</p>
+                <p><strong>Amount:</strong> $25,000</p>
+                <p><strong>Method:</strong> Wire Transfer</p>
+                <p><strong>Expected:</strong> Rejection due to amount</p>
+            </div>
+        </div>
+
+        <div class="loading" id="scenarioLoading">
+            <div class="spinner"></div>
+            <p>Running scenario...</p>
+        </div>
+
+        <div class="result" id="scenarioResult"></div>
+    </div>
+
+    <!-- Custom Test Tab -->
+    <div id="custom-tab" class="tab-content">
+        <h2>Custom Scenario Builder</h2>
+
+        <form id="customForm">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                <div>
+                    <label>Customer ID:</label>
+                    <select id="customerId" required>
+                        <option value="CUST001">CUST001 - John Smith (Active)</option>
+                        <option value="CUST002">CUST002 - Sarah Johnson (Active)</option>
+                        <option value="CUST003">CUST003 - Mike Brown (Suspended)</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Card Account:</label>
+                    <select id="cardAccountId" required>
+                        <option value="CC001">CC001</option>
+                        <option value="CC002">CC002</option>
+                        <option value="CC003">CC003</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                <div>
+                    <label>Payment Amount ($):</label>
+                    <input type="number" id="paymentAmount" min="1" max="100000" value="1000" required>
+                </div>
+                <div>
+                    <label>Payment Method:</label>
+                    <select id="paymentMethod" required>
+                        <option value="ACH">ACH Transfer (Lowest Risk)</option>
+                        <option value="BANK_TRANSFER">Bank Transfer (Medium Risk)</option>
+                        <option value="WIRE">Wire Transfer (Highest Risk)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label>Risk Thresholds for this test:</label>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 10px;">
+                    <div>
+                        <label>High Risk Threshold: <span id="customHighRisk">0.7</span></label>
+                        <input type="range" id="customHighRiskSlider" min="0.1" max="1.0" step="0.1" value="0.7"
+                               oninput="document.getElementById('customHighRisk').textContent = this.value">
+                    </div>
+                    <div>
+                        <label>Medium Risk Threshold: <span id="customMediumRisk">0.4</span></label>
+                        <input type="range" id="customMediumRiskSlider" min="0.1" max="1.0" step="0.1" value="0.4"
+                               oninput="document.getElementById('customMediumRisk').textContent = this.value">
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="btn">🧪 Run Custom Test</button>
+        </form>
+
+        <div class="loading" id="customLoading" style="display: none;">
+            <div class="spinner"></div>
+            <p>Running custom test...</p>
+        </div>
+
+        <div class="result" id="customResult"></div>
+    </div>
+
+    <!-- Risk Controls Tab -->
+    <div id="controls-tab" class="tab-content">
+        <div class="risk-controls">
+            <h3>Global Risk Threshold Controls</h3>
+            <p>Adjust these settings to control how strict the fraud detection is across all tests:</p>
+
+            <div class="risk-slider">
+                <label>High Risk Threshold: <span class="value" id="globalHighRisk">0.7</span></label>
+                <input type="range" id="globalHighRiskSlider" min="0.1" max="1.0" step="0.05" value="0.7"
+                       oninput="updateGlobalThreshold('high', this.value)">
+                <small>Above this threshold = AUTOMATIC REJECTION</small>
+            </div>
+
+            <div class="risk-slider">
+                <label>Medium Risk Threshold: <span class="value" id="globalMediumRisk">0.4</span></label>
+                <input type="range" id="globalMediumRiskSlider" min="0.1" max="1.0" step="0.05" value="0.4"
+                       oninput="updateGlobalThreshold('medium', this.value)">
+                <small>Between medium and high = 50/50 chance of rejection</small>
+            </div>
+
+            <div style="margin-top: 20px;">
+                <button class="btn success" onclick="setLenientMode()">😊 Lenient Mode (Most Approvals)</button>
+                <button class="btn warning" onclick="setBalancedMode()">⚖️ Balanced Mode (Default)</button>
+                <button class="btn danger" onclick="setStrictMode()">🚫 Strict Mode (More Rejections)</button>
+            </div>
+
+            <div style="margin-top: 20px; padding: 15px; background: #e3f2fd; border-radius: 8px;">
+                <h4>Risk Factors Explained:</h4>
+                <ul style="margin-left: 20px; margin-top: 10px;">
+                    <li><strong>Customer Status:</strong> Suspended customers (+0.3 risk)</li>
+                    <li><strong>Amount Ranges:</strong>
+                        <ul style="margin-left: 20px;">
+                            <li>$10,000+ = +0.5 risk</li>
+                            <li>$5,000+ = +0.3 risk</li>
+                            <li>$2,000+ = +0.2 risk</li>
+                            <li>$1,000+ = +0.1 risk</li>
+                        </ul>
+                    </li>
+                    <li><strong>Payment Methods:</strong> Wire (+0.15), Bank Transfer (+0.1), ACH (+0.05)</li>
+                    <li><strong>Random Factor:</strong> +0 to +0.3 for variability</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="result" id="controlsResult"></div>
+    </div>
+</div>
+
+<script>
+    const API_BASE_URL = 'http://localhost:9999';
+
+    // Tab switching
+    function showTab(tabName) {
+        document.querySelectorAll('.tab-content').forEach(tab => {
+            tab.classList.remove('active');
+        });
+        document.querySelectorAll('.nav-tab').forEach(tab => {
+            tab.classList.remove('active');
+        });
+
+        document.getElementById(tabName + '-tab').classList.add('active');
+        event.target.classList.add('active');
+    }
+
+    // Test predefined scenarios
+    async function testScenario(scenarioType) {
+        showLoading('scenarioLoading', true);
+        hideResult('scenarioResult');
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/demo/scenario/${scenarioType}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+
+            const result = await response.json();
+            showLoading('scenarioLoading', false);
+
+            const resultDiv = document.getElementById('scenarioResult');
+            resultDiv.className = result.success ? 'result success' : 'result error';
+            resultDiv.innerHTML = `
+                <h3>${result.success ? '✅' : '❌'} ${result.scenario}</h3>
+                <p><strong>Message:</strong> ${result.message}</p>
+                ${result.processInstanceKey ? `<p><strong>Process ID:</strong> ${result.processInstanceKey}</p>` : ''}
+                ${result.expectedOutcome ? `<p><strong>Expected:</strong> ${result.expectedOutcome}</p>` : ''}
+                <p><strong>Monitor:</strong> Check console logs for detailed fraud check results</p>
+            `;
+            resultDiv.style.display = 'block';
+
+        } catch (error) {
+            showLoading('scenarioLoading', false);
+            const resultDiv = document.getElementById('scenarioResult');
+            resultDiv.className = 'result error';
+            resultDiv.innerHTML = `<h3>❌ Connection Error</h3><p>${error.message}</p>`;
+            resultDiv.style.display = 'block';
+        }
+    }
+
+    // Custom scenario form
+    document.getElementById('customForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        showLoading('customLoading', true);
+        hideResult('customResult');
+
+        const formData = {
+            customerId: document.getElementById('customerId').value,
+            cardAccountId: document.getElementById('cardAccountId').value,
+            paymentAmount: parseFloat(document.getElementById('paymentAmount').value),
+            paymentMethod: document.getElementById('paymentMethod').value,
+            paymentDate: new Date().toISOString(),
+            highRiskThreshold: parseFloat(document.getElementById('customHighRiskSlider').value),
+            mediumRiskThreshold: parseFloat(document.getElementById('customMediumRiskSlider').value)
+        };
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/demo/scenario/custom`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData)
+            });
+
+            const result = await response.json();
+            showLoading('customLoading', false);
+
+            const resultDiv = document.getElementById('customResult');
+            resultDiv.className = result.success ? 'result success' : 'result error';
+            resultDiv.innerHTML = `
+                <h3>${result.success ? '🧪' : '❌'} Custom Test Result</h3>
+                <p><strong>Thresholds:</strong> High: ${formData.highRiskThreshold}, Medium: ${formData.mediumRiskThreshold}</p>
+                <p><strong>Expected:</strong> ${result.expectedOutcome || 'Unknown'}</p>
+                <p><strong>Process ID:</strong> ${result.processInstanceKey || 'N/A'}</p>
+                <p><strong>Watch:</strong> Console logs for actual fraud check result</p>
+            `;
+            resultDiv.style.display = 'block';
+
+        } catch (error) {
+            showLoading('customLoading', false);
+            const resultDiv = document.getElementById('customResult');
+            resultDiv.className = 'result error';
+            resultDiv.innerHTML = `<h3>❌ Error</h3><p>${error.message}</p>`;
+            resultDiv.style.display = 'block';
+        }
+    });
+
+    // Global threshold controls
+    async function updateGlobalThreshold(type, value) {
+        document.getElementById(`global${type.charAt(0).toUpperCase() + type.slice(1)}Risk`).textContent = value;
+
+        const thresholds = {};
+        thresholds[type + 'RiskThreshold'] = parseFloat(value);
+
+        try {
+            await fetch(`${API_BASE_URL}/api/demo/risk-thresholds`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(thresholds)
+            });
+        } catch (error) {
+            console.error('Failed to update threshold:', error);
+        }
+    }
+
+    // Preset modes
+    async function setLenientMode() {
+        await setThresholds(0.9, 0.7);
+        updateSliders(0.9, 0.7);
+        showControlsResult('😊 Lenient Mode Active - Most transactions will be approved', 'success');
+    }
+
+    async function setBalancedMode() {
+        await setThresholds(0.7, 0.4);
+        updateSliders(0.7, 0.4);
+        showControlsResult('⚖️ Balanced Mode Active - Default risk thresholds', 'success');
+    }
+
+    async function setStrictMode() {
+        await setThresholds(0.4, 0.2);
+        updateSliders(0.4, 0.2);
+        showControlsResult('🚫 Strict Mode Active - More transactions will be rejected', 'warning');
+    }
+
+    async function setThresholds(high, medium) {
+        try {
+            await fetch(`${API_BASE_URL}/api/demo/risk-thresholds`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    highRiskThreshold: high,
+                    mediumRiskThreshold: medium
+                })
+            });
+        } catch (error) {
+            console.error('Failed to set thresholds:', error);
+        }
+    }
+
+    function updateSliders(high, medium) {
+        document.getElementById('globalHighRiskSlider').value = high;
+        document.getElementById('globalHighRisk').textContent = high;
+        document.getElementById('globalMediumRiskSlider').value = medium;
+        document.getElementById('globalMediumRisk').textContent = medium;
+    }
+
+    function showControlsResult(message, type) {
+        const resultDiv = document.getElementById('controlsResult');
+        resultDiv.className = `result ${type}`;
+        resultDiv.innerHTML = `<p>${message}</p>`;
+        resultDiv.style.display = 'block';
+        setTimeout(() => { resultDiv.style.display = 'none'; }, 3000);
+    }
+
+    // Utility functions
+    function showLoading(loadingId, show) {
+        document.getElementById(loadingId).style.display = show ? 'block' : 'none';
+    }
+
+    function hideResult(resultId) {
+        document.getElementById(resultId).style.display = 'none';
+    }
+
+    // Auto-select matching account for customer
+    document.getElementById('customerId').addEventListener('change', function() {
+        const customerId = this.value;
+        const accountSelect = document.getElementById('cardAccountId');
+
+        if (customerId === 'CUST001') {
+            accountSelect.value = 'CC001';
+        } else if (customerId === 'CUST002') {
+            accountSelect.value = 'CC002';
+        } else if (customerId === 'CUST003') {
+            accountSelect.value = 'CC003';
+        }
+    });
+</script>
+</body>
+</html>

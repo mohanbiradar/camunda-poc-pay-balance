@@ -1,0 +1,263 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_0fr9mxs" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.36.1" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.6.0">
+  <bpmn:process id="pay-my-balance-process" name="Pay My Balance Process" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_1" name="Pay Balance Request">
+      <bpmn:outgoing>Flow_0hb6l5d</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:serviceTask id="Activity_ValidateCustomer" name="Validate Customer and Card Account">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="validate-customer" />
+        <zeebe:ioMapping>
+          <zeebe:input source="=customerId" target="customerId" />
+          <zeebe:input source="=cardAccountId" target="cardAccountId" />
+        </zeebe:ioMapping>
+        <zeebe:taskHeaders>
+          <zeebe:header key="retryBackoff" value="PT3S" />
+        </zeebe:taskHeaders>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0hb6l5d</bpmn:incoming>
+      <bpmn:outgoing>Flow_1234567</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Activity_RetrieveBalance" name="Retrieve Balance">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="retrieve-balance" />
+        <zeebe:ioMapping>
+          <zeebe:input source="=cardAccountId" target="cardAccountId" />
+        </zeebe:ioMapping>
+        <zeebe:taskHeaders>
+          <zeebe:header key="retryBackoff" value="PT3S" />
+        </zeebe:taskHeaders>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1234567</bpmn:incoming>
+      <bpmn:outgoing>Flow_2345678</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:userTask id="Activity_PresentPaymentOptions" name="Present Payment Options to User">
+      <bpmn:extensionElements>
+        <zeebe:formDefinition formId="payment-options-form" />
+        <zeebe:taskHeaders>
+          <zeebe:header key="candidateUsers" value="demo-user" />
+          <zeebe:header key="dueDate" value="PT10M" />
+        </zeebe:taskHeaders>
+        <zeebe:userTask />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_2345678</bpmn:incoming>
+      <bpmn:outgoing>Flow_3456789</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:serviceTask id="Activity_FraudCheck" name="Perform Fraud/Compliance Check">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="fraud-check" />
+        <zeebe:ioMapping>
+          <zeebe:input source="=customerId" target="customerId" />
+          <zeebe:input source="=paymentAmount" target="paymentAmount" />
+          <zeebe:input source="=paymentMethod" target="paymentMethod" />
+        </zeebe:ioMapping>
+        <zeebe:taskHeaders>
+          <zeebe:header key="timeout" value="PT30S" />
+        </zeebe:taskHeaders>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_3456789</bpmn:incoming>
+      <bpmn:outgoing>Flow_4567890</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="Gateway_PaymentApproved" name="Payment Approved?" default="Flow_Rejected">
+      <bpmn:incoming>Flow_4567890</bpmn:incoming>
+      <bpmn:outgoing>Flow_Approved</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Rejected</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="Activity_InitiatePayment" name="Initiate Payment with Gateway">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="initiate-payment" />
+        <zeebe:ioMapping>
+          <zeebe:input source="=paymentAmount" target="paymentAmount" />
+          <zeebe:input source="=paymentMethod" target="paymentMethod" />
+          <zeebe:input source="=cardAccountId" target="cardAccountId" />
+        </zeebe:ioMapping>
+        <zeebe:taskHeaders>
+          <zeebe:header key="timeout" value="PT60S" />
+          <zeebe:header key="retryBackoff" value="PT5S" />
+        </zeebe:taskHeaders>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Approved</bpmn:incoming>
+      <bpmn:outgoing>Flow_5678901</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Activity_ConfirmPayment" name="Confirm Payment Receipt">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="confirm-payment" />
+        <zeebe:ioMapping>
+          <zeebe:input source="=transactionId" target="transactionId" />
+        </zeebe:ioMapping>
+        <zeebe:taskHeaders>
+          <zeebe:header key="timeout" value="PT30S" />
+        </zeebe:taskHeaders>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_5678901</bpmn:incoming>
+      <bpmn:outgoing>Flow_6789012</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Activity_UpdateBalance" name="Update Account Balance">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="update-balance" />
+        <zeebe:ioMapping>
+          <zeebe:input source="=cardAccountId" target="cardAccountId" />
+          <zeebe:input source="=paymentAmount" target="paymentAmount" />
+          <zeebe:input source="=transactionId" target="transactionId" />
+        </zeebe:ioMapping>
+        <zeebe:taskHeaders>
+          <zeebe:header key="retryBackoff" value="PT3S" />
+        </zeebe:taskHeaders>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_6789012</bpmn:incoming>
+      <bpmn:outgoing>Flow_7890123</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Activity_SendConfirmation" name="Send Confirmation to Customer">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="send-confirmation" />
+        <zeebe:ioMapping>
+          <zeebe:input source="=customerId" target="customerId" />
+          <zeebe:input source="=paymentAmount" target="paymentAmount" />
+          <zeebe:input source="=transactionId" target="transactionId" />
+        </zeebe:ioMapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_7890123</bpmn:incoming>
+      <bpmn:outgoing>Flow_8901234</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Activity_SendRejectionNotice" name="Send Rejection Notice">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="send-rejection-notice" />
+        <zeebe:ioMapping>
+          <zeebe:input source="=customerId" target="customerId" />
+          <zeebe:input source="=fraudReason" target="rejectionReason" />
+        </zeebe:ioMapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Rejected</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToRejectedEnd</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="Event_PaymentCompleted" name="Payment Completed">
+      <bpmn:incoming>Flow_8901234</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="Event_PaymentRejected" name="Payment Rejected">
+      <bpmn:incoming>Flow_ToRejectedEnd</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_0hb6l5d" sourceRef="StartEvent_1" targetRef="Activity_ValidateCustomer" />
+    <bpmn:sequenceFlow id="Flow_1234567" sourceRef="Activity_ValidateCustomer" targetRef="Activity_RetrieveBalance" />
+    <bpmn:sequenceFlow id="Flow_2345678" sourceRef="Activity_RetrieveBalance" targetRef="Activity_PresentPaymentOptions" />
+    <bpmn:sequenceFlow id="Flow_3456789" sourceRef="Activity_PresentPaymentOptions" targetRef="Activity_FraudCheck" />
+    <bpmn:sequenceFlow id="Flow_4567890" sourceRef="Activity_FraudCheck" targetRef="Gateway_PaymentApproved" />
+    <bpmn:sequenceFlow id="Flow_Approved" name="Yes" sourceRef="Gateway_PaymentApproved" targetRef="Activity_InitiatePayment">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=fraudCheckResult = "APPROVED"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Rejected" name="No" sourceRef="Gateway_PaymentApproved" targetRef="Activity_SendRejectionNotice" />
+    <bpmn:sequenceFlow id="Flow_5678901" sourceRef="Activity_InitiatePayment" targetRef="Activity_ConfirmPayment" />
+    <bpmn:sequenceFlow id="Flow_6789012" sourceRef="Activity_ConfirmPayment" targetRef="Activity_UpdateBalance" />
+    <bpmn:sequenceFlow id="Flow_7890123" sourceRef="Activity_UpdateBalance" targetRef="Activity_SendConfirmation" />
+    <bpmn:sequenceFlow id="Flow_8901234" sourceRef="Activity_SendConfirmation" targetRef="Event_PaymentCompleted" />
+    <bpmn:sequenceFlow id="Flow_ToRejectedEnd" sourceRef="Activity_SendRejectionNotice" targetRef="Event_PaymentRejected" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="pay-my-balance-process">
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+        <dc:Bounds x="172" y="282" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="160" y="325" width="62" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_ValidateCustomer_di" bpmnElement="Activity_ValidateCustomer">
+        <dc:Bounds x="290" y="260" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_RetrieveBalance_di" bpmnElement="Activity_RetrieveBalance">
+        <dc:Bounds x="460" y="260" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_PresentPaymentOptions_di" bpmnElement="Activity_PresentPaymentOptions">
+        <dc:Bounds x="630" y="260" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_FraudCheck_di" bpmnElement="Activity_FraudCheck">
+        <dc:Bounds x="780" y="260" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_PaymentApproved_di" bpmnElement="Gateway_PaymentApproved" isMarkerVisible="true">
+        <dc:Bounds x="935" y="275" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="994.5" y="286" width="53" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_InitiatePayment_di" bpmnElement="Activity_InitiatePayment">
+        <dc:Bounds x="910" y="60" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_ConfirmPayment_di" bpmnElement="Activity_ConfirmPayment">
+        <dc:Bounds x="1090" y="60" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_UpdateBalance_di" bpmnElement="Activity_UpdateBalance">
+        <dc:Bounds x="1080" y="240" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_SendConfirmation_di" bpmnElement="Activity_SendConfirmation">
+        <dc:Bounds x="1240" y="240" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_SendRejectionNotice_di" bpmnElement="Activity_SendRejectionNotice">
+        <dc:Bounds x="910" y="470" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_PaymentCompleted_di" bpmnElement="Event_PaymentCompleted">
+        <dc:Bounds x="1382" y="262" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1373" y="305" width="54" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_PaymentRejected_di" bpmnElement="Event_PaymentRejected">
+        <dc:Bounds x="1372" y="492" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1368" y="535" width="45" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_0hb6l5d_di" bpmnElement="Flow_0hb6l5d">
+        <di:waypoint x="208" y="300" />
+        <di:waypoint x="290" y="300" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1234567_di" bpmnElement="Flow_1234567">
+        <di:waypoint x="390" y="300" />
+        <di:waypoint x="460" y="300" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_2345678_di" bpmnElement="Flow_2345678">
+        <di:waypoint x="560" y="300" />
+        <di:waypoint x="630" y="300" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_3456789_di" bpmnElement="Flow_3456789">
+        <di:waypoint x="730" y="300" />
+        <di:waypoint x="780" y="300" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_4567890_di" bpmnElement="Flow_4567890">
+        <di:waypoint x="880" y="300" />
+        <di:waypoint x="935" y="300" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Approved_di" bpmnElement="Flow_Approved">
+        <di:waypoint x="960" y="275" />
+        <di:waypoint x="960" y="140" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="936" y="198" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Rejected_di" bpmnElement="Flow_Rejected">
+        <di:waypoint x="960" y="325" />
+        <di:waypoint x="960" y="470" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="965" y="379" width="15" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_5678901_di" bpmnElement="Flow_5678901">
+        <di:waypoint x="1010" y="100" />
+        <di:waypoint x="1090" y="100" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_6789012_di" bpmnElement="Flow_6789012">
+        <di:waypoint x="1130" y="140" />
+        <di:waypoint x="1130" y="240" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_7890123_di" bpmnElement="Flow_7890123">
+        <di:waypoint x="1180" y="280" />
+        <di:waypoint x="1240" y="280" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_8901234_di" bpmnElement="Flow_8901234">
+        <di:waypoint x="1340" y="280" />
+        <di:waypoint x="1382" y="280" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToRejectedEnd_di" bpmnElement="Flow_ToRejectedEnd">
+        <di:waypoint x="1010" y="510" />
+        <di:waypoint x="1372" y="510" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

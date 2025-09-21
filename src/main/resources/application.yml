@@ -1,0 +1,21 @@
+camunda:
+  client:
+    zeebe:
+      grpc-address: http://localhost:26500
+      security:
+        plaintext: true
+      prefer-rest-over-grpc: false  # Explicitly set to suppress warning
+
+spring:
+  application:
+    name: camunda-poc
+
+server:
+  port: 9999
+
+logging:
+  level:
+    io.camunda: INFO
+    com.demo.paymybalance: DEBUG
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
